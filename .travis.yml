@@ -1,3 +1,6 @@
+env:
+  global:
+    - secure: q+azCWiZLMnpauOWB885uoQV0NPhFs9tNX1p0omMAV6mJoC8JD5F7zbTrC3Q+Tz1V97kpokCMTHkqOK8Nb7Z6D8aPqpMHZn/BLE07k0YmbwLyIUXF1HXm5JLeG2W3e2GNy2NRU2moZoO7vNRBL9Rz3UjkAOinTZQ6oXWJcZDEEA=
 before_install:
   - yes | sudo add-apt-repository ppa:hansjorg/rust
   - sudo apt-get update
@@ -8,3 +11,5 @@ script:
   - rustc --test src/lib.rs
   - ./iconv
   - rustdoc src/lib.rs
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
