@@ -10,6 +10,11 @@ Binding for the iconv library
 #[crate_id = "iconv#0.1-pre"];
 #[crate_type = "rlib"];
 #[crate_type = "dylib"];
+#[doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+      html_favicon_url = "http://www.rust-lang.org/favicon.ico",
+      html_root_url = "http://static.rust-lang.org/doc/master")];
+
+#[feature(globs)];
 
 use std::cast;
 use std::vec;
@@ -297,8 +302,7 @@ mod test {
     use std::io;
     use std::io::BufReader;
 
-    use super::{IconvReader, IconvEncodable, IconvDecodable};
-
+    use super::*;
 
     #[test]
     fn test_reader() {
@@ -394,5 +398,13 @@ mod test {
     fn test_decoder_invalid() {
         let a = ~[0xb9, 0xfe, 0xb9]; // incomplete gbk bytes
         a.decode_with_encoding("GBK").unwrap();
+    }
+
+    #[test]
+    fn test_caocao_joke() {
+        let a = "曹操";
+        let b = "变巨";
+        assert_eq!(a.encode_with_encoding("BIG5").unwrap(),
+                   b.encode_with_encoding("GBK").unwrap());
     }
 }
