@@ -1,0 +1,6 @@
+*~
+*.dSYM/
+*.swp
+*.dylib
+*.rlib
+doc/
