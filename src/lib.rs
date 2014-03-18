@@ -15,7 +15,9 @@ Binding for the iconv library
       html_root_url = "http://static.rust-lang.org/doc/master")];
 
 #[feature(globs)];
+#[feature(phase)];
 
+#[phase(syntax, link)] extern crate log;
 use std::cast;
 use std::vec;
 use std::io;
