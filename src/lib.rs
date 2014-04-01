@@ -4,17 +4,17 @@ Binding for the iconv library
 
  */
 
-#[desc = "iconv bindings for Rust."];
-#[license = "MIT"];
+#![desc = "iconv bindings for Rust."]
+#![license = "MIT"]
 
-#[crate_id = "iconv#0.1-pre"];
-#[crate_type = "rlib"];
-#[crate_type = "dylib"];
-#[doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-      html_favicon_url = "http://www.rust-lang.org/favicon.ico",
-      html_root_url = "http://static.rust-lang.org/doc/master")];
+#![crate_id = "iconv#0.1-pre"]
+#![crate_type = "rlib"]
+#![crate_type = "dylib"]
+#![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+       html_favicon_url = "http://www.rust-lang.org/favicon.ico",
+       html_root_url = "http://static.rust-lang.org/doc/master")]
 
-#[feature(globs,phase)];
+#![feature(globs,phase)]
 
 #[phase(syntax, link)] extern crate log;
 
@@ -38,16 +38,12 @@ type iconv_t = *mut c_void;
 
 #[cfg(target_os = "macos")]
 #[link(name = "iconv")]
-extern "C" {
-    fn iconv_open(__tocode: *c_schar, __fromcode: *c_schar) -> iconv_t;
-    fn iconv(__cd: iconv_t, __inbuf: *mut *mut c_schar,
-                 __inbytesleft: *mut size_t, __outbuf: *mut *mut c_schar,
-                 __outbytesleft: *mut size_t) -> size_t;
-    fn iconv_close(__cd: iconv_t) -> c_int;
-}
+extern {}
 
 // iconv is part of linux glibc
 #[cfg(target_os = "linux")]
+extern {}
+
 extern "C" {
     fn iconv_open(__tocode: *c_schar, __fromcode: *c_schar) -> iconv_t;
     fn iconv(__cd: iconv_t, __inbuf: *mut *mut c_schar,
