@@ -55,7 +55,7 @@ extern "C" {
 
 /// The representation of a iconv converter
 pub struct Converter {
-    priv cd: iconv_t,
+    cd: iconv_t,
 }
 
 impl Converter {
@@ -121,13 +121,13 @@ impl Drop for Converter {
 
 /// A ``Reader`` which does iconv convert from another Reader.
 pub struct IconvReader<R> {
-    priv inner: R,
-    priv conv: Converter,
-    priv buf: Vec<u8>,
-    priv read_pos: uint,
-    priv write_pos: uint,
-    priv err: Option<IoError>,
-    priv tempbuf: Vec<u8>,        // used when outbut is too small and can't make a single convertion
+    inner: R,
+    conv: Converter,
+    buf: Vec<u8>,
+    read_pos: uint,
+    write_pos: uint,
+    err: Option<IoError>,
+    tempbuf: Vec<u8>,        // used when outbut is too small and can't make a single convertion
 }
 
 impl<R:Reader> IconvReader<R> {
