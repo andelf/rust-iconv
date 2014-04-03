@@ -7,9 +7,15 @@ before_install:
 install:
   - sudo apt-get install rust-nightly
 script:
-  - rustc src/lib.rs
-  - rustc --test src/lib.rs
+  - rustc src/iconv/lib.rs
+  - rustc --test src/iconv/lib.rs
   - ./iconv
-  - rustdoc src/lib.rs
+  - rustdoc src/iconv/lib.rs
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+notifications:
+  email:
+    recipients:
+      - fledna@foxmail.com
+    on_success: change
+    on_failure: always

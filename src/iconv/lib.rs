@@ -2,6 +2,8 @@
 
 Binding for the iconv library
 
+[![Build Status](https://drone.io/github.com/andelf/rust-iconv/status.png)](https://drone.io/github.com/andelf/rust-iconv/latest)
+
  */
 
 #![desc = "iconv bindings for Rust."]
@@ -222,6 +224,32 @@ impl<R:Reader> Reader for IconvReader<R> {
             }
             _ => unreachable!()
         }
+    }
+}
+
+/// A ``Writer`` which does iconv convert into another Writer. not implemented yet.
+pub struct IconvWriter<W> {
+    inner: W,
+    conv: Converter,
+    buf: Vec<u8>,
+    read_pos: uint,
+    write_pos: uint,
+    err: Option<IoError>,
+}
+
+impl<W:Writer> IconvWriter<W> {
+    pub fn new(r: W, from: &str, to: &str) -> IconvWriter<W> {
+        let conv = Converter::new(from, to);
+        IconvWriter { inner: r, conv: conv,
+                      buf: Vec::from_elem(8*1024, 0u8),
+                      read_pos: 0, write_pos: 0, err: None,
+        }
+    }
+}
+
+impl<W:Writer> Writer for IconvWriter<W> {
+    fn write(&mut self, _buf: &[u8]) -> IoResult<()> {
+        unimplemented!()
     }
 }
 
