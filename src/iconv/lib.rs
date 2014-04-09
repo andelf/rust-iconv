@@ -360,8 +360,8 @@ mod test {
         let mut nread = 0;
         loop {
             match cr.read_exact(4) {
-                Ok(ref seg) if seg.len() == 4 => {
-                    assert_eq!(seg, &~[224, 219, 185, 254]);
+                Ok(seg) if seg.len() == 4 => {
+                    assert_eq!(seg, vec!(224, 219, 185, 254));
                     nread += 4;
                 }
                 Err(ref e) if e.kind == io::EndOfFile => {
