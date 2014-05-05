@@ -9,9 +9,8 @@ Binding for the iconv library
 #![desc = "iconv bindings for Rust."]
 #![license = "MIT"]
 
-#![crate_id = "iconv#0.1-pre"]
-#![crate_type = "rlib"]
-#![crate_type = "dylib"]
+#![crate_id = "github.com/andelf/rust-iconv#iconv:0.1-pre"]
+#![crate_type = "lib"]
 #![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "http://www.rust-lang.org/favicon.ico",
        html_root_url = "http://static.rust-lang.org/doc/master")]
@@ -413,10 +412,10 @@ mod test {
 
     #[test]
     fn test_decoder_normal() {
-        assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), ~"");
+        assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), "".to_owned());
 
         let a = ~[0xb9, 0xfe, 0xb9, 0xfe];
-        assert_eq!(a.decode_with_encoding("GBK").unwrap(), ~"哈哈");
+        assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_owned());
 
         let b = Vec::from_fn(1000, |i| a[i%4]); // grow to 1000 bytes and fill with a
 
@@ -428,7 +427,7 @@ mod test {
     #[test]
     #[should_fail]
     fn test_decoder_fail_creating_converter() {
-        assert_eq!(bytes!("").decode_with_encoding("NOT_EXSITS").unwrap(), ~"");
+        assert_eq!(bytes!("").decode_with_encoding("NOT_EXSITS").unwrap(), "".to_owned());
     }
 
     #[test]
