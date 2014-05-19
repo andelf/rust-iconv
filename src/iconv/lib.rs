@@ -20,7 +20,7 @@ Binding for the iconv library
 #[phase(syntax, link)] extern crate log;
 extern crate libc;
 
-use std::cast;
+use std::mem;
 use std::vec::Vec;
 use std::io;
 use std::io::{IoResult, IoError};
@@ -85,8 +85,8 @@ impl Converter {
             let output_ptr = output.as_ptr();
 
             let ret = unsafe { iconv(self.cd,
-                                     cast::transmute(&input_ptr), cast::transmute(&input_left),
-                                     cast::transmute(&output_ptr), cast::transmute(&output_left))
+                                     mem::transmute(&input_ptr), mem::transmute(&input_left),
+                                     mem::transmute(&output_ptr), mem::transmute(&output_left))
             };
             let bytes_read = input.len() - input_left as uint;
             let bytes_written = output.len() - output_left as uint;
@@ -96,8 +96,8 @@ impl Converter {
             let output_ptr = output.as_ptr();
 
             let ret = unsafe { iconv(self.cd,
-                                     ptr::mut_null::<*mut c_char>(), cast::transmute(&input_left),
-                                     cast::transmute(&output_ptr), cast::transmute(&output_left))
+                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&input_left),
+                                     mem::transmute(&output_ptr), mem::transmute(&output_left))
             };
 
             let bytes_written = output.len() - output_left as uint;
@@ -105,8 +105,8 @@ impl Converter {
             return (0, bytes_written, if -1 as size_t == ret { errno() as c_int } else { 0 })
         } else {
             let ret = unsafe { iconv(self.cd,
-                                     ptr::mut_null::<*mut c_char>(), cast::transmute(&input_left),
-                                     ptr::mut_null::<*mut c_char>(), cast::transmute(&output_left))
+                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&input_left),
+                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&output_left))
             };
 
             return (0, 0, if -1 as size_t == ret { errno() as c_int } else { 0 })
@@ -146,7 +146,7 @@ impl<R:Reader> IconvReader<R> {
         if self.read_pos > 0 {
             unsafe {
                 ptr::copy_memory::<u8>(self.buf.as_mut_ptr(),
-                                       cast::transmute(self.buf.get(self.read_pos)),
+                                       mem::transmute(self.buf.get(self.read_pos)),
                                        self.write_pos - self.read_pos);
             }
 
