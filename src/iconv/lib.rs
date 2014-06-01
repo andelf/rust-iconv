@@ -19,6 +19,7 @@ Binding for the iconv library
 
 #[phase(syntax, link)] extern crate log;
 extern crate libc;
+extern crate debug;
 
 use std::mem;
 use std::vec::Vec;
@@ -306,8 +307,13 @@ impl<'a> IconvEncodable for Vec<u8> {
     }
 }
 
-
 impl<'a> IconvEncodable for &'a str {
+    fn encode_with_encoding(&self, encoding: &str) -> Option<Vec<u8>> {
+        return self.as_bytes().encode_with_encoding(encoding);
+    }
+}
+
+impl<'a> IconvEncodable for String {
     fn encode_with_encoding(&self, encoding: &str) -> Option<Vec<u8>> {
         return self.as_bytes().encode_with_encoding(encoding);
     }
@@ -316,29 +322,28 @@ impl<'a> IconvEncodable for &'a str {
 /// Can be decoded to str via iconv
 pub trait IconvDecodable {
     /// Decode to str with encoding
-    fn decode_with_encoding(&self, encoding: &str) -> Option<~str>;
+    fn decode_with_encoding(&self, encoding: &str) -> Option<String>;
 }
 
 impl<'a> IconvDecodable for &'a [u8] {
-    fn decode_with_encoding(&self, encoding: &str) -> Option<~str> {
+    fn decode_with_encoding(&self, encoding: &str) -> Option<String> {
         convert_bytes(*self, encoding, "UTF-8").and_then(|bs| {
                 str::from_utf8(bs.as_slice()).map(|s| {
-                        s.into_owned()
+                        s.into_string()
                     })
             })
     }
 }
 
 impl<'a> IconvDecodable for Vec<u8> {
-    fn decode_with_encoding(&self, encoding: &str) -> Option<~str> {
+    fn decode_with_encoding(&self, encoding: &str) -> Option<String> {
         convert_bytes(self.as_slice(), encoding, "UTF-8").and_then(|bs| {
                 str::from_utf8(bs.as_slice()).map(|s| {
-                        s.into_owned()
+                        s.into_string()
                     })
             })
     }
 }
-
 
 
 #[cfg(test)]
@@ -412,14 +417,14 @@ mod test {
 
     #[test]
     fn test_decoder_normal() {
-        assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), "".to_owned());
+        assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), "".to_string());
 
         let a = ~[0xb9, 0xfe, 0xb9, 0xfe];
-        assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_owned());
+        assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_string());
 
         let b = Vec::from_fn(1000, |i| a[i%4]); // grow to 1000 bytes and fill with a
 
-        for c in b.decode_with_encoding("GBK").unwrap().chars() {
+        for c in b.decode_with_encoding("GBK").unwrap().as_slice().chars() {
             assert_eq!(c, '哈');
         }
     }
@@ -427,7 +432,7 @@ mod test {
     #[test]
     #[should_fail]
     fn test_decoder_fail_creating_converter() {
-        assert_eq!(bytes!("").decode_with_encoding("NOT_EXSITS").unwrap(), "".to_owned());
+        assert_eq!(bytes!("").decode_with_encoding("NOT_EXSITS").unwrap(), "".to_string());
     }
 
     #[test]
