@@ -17,7 +17,7 @@ Binding for the iconv library
 
 #![feature(globs,phase)]
 
-#[phase(syntax, link)] extern crate log;
+#[phase(plugin, link)] extern crate log;
 extern crate libc;
 extern crate debug;
 
@@ -391,7 +391,7 @@ mod test {
             assert_eq!(ch, &[0xb9, 0xfe, 0xb9, 0xfe]);
         }
 
-        let c = ~[0xe5, 0x93, 0x88, 0xe5, 0x93, 0x88]; // utf8 bytes
+        let c = vec!(0xe5, 0x93, 0x88, 0xe5, 0x93, 0x88); // utf8 bytes
         assert_eq!(c.encode_with_encoding("GBK").unwrap(), vec!(0xb9, 0xfe, 0xb9, 0xfe));
     }
 
@@ -404,14 +404,14 @@ mod test {
     #[test]
     #[should_fail]
     fn test_encoder_ilseq() {
-        let a = ~[0xff, 0xff, 0xff];
+        let a = vec!(0xff, 0xff, 0xff);
         a.encode_with_encoding("GBK").unwrap();
     }
 
     #[test]
     #[should_fail]
     fn test_encoder_invalid() {
-        let a = ~[0xe5, 0x93, 0x88, 0xe5, 0x88]; // incomplete utf8 bytes
+        let a = vec!(0xe5, 0x93, 0x88, 0xe5, 0x88); // incomplete utf8 bytes
         a.encode_with_encoding("GBK").unwrap();
     }
 
@@ -419,10 +419,10 @@ mod test {
     fn test_decoder_normal() {
         assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), "".to_string());
 
-        let a = ~[0xb9, 0xfe, 0xb9, 0xfe];
+        let a = vec!(0xb9, 0xfe, 0xb9, 0xfe);
         assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_string());
 
-        let b = Vec::from_fn(1000, |i| a[i%4]); // grow to 1000 bytes and fill with a
+        let b = Vec::from_fn(1000, |i| *a.get(i%4)); // grow to 1000 bytes and fill with a
 
         for c in b.decode_with_encoding("GBK").unwrap().as_slice().chars() {
             assert_eq!(c, '哈');
@@ -438,14 +438,14 @@ mod test {
     #[test]
     #[should_fail]
     fn test_decoder_ilseq() {
-        let a = ~[0xff, 0xff, 0xff];
+        let a = vec!(0xff, 0xff, 0xff);
         a.decode_with_encoding("GBK").unwrap();
     }
 
     #[test]
     #[should_fail]
     fn test_decoder_invalid() {
-        let a = ~[0xb9, 0xfe, 0xb9]; // incomplete gbk bytes
+        let a = vec!(0xb9, 0xfe, 0xb9); // incomplete gbk bytes
         a.decode_with_encoding("GBK").unwrap();
     }
 
