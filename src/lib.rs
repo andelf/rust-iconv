@@ -48,7 +48,7 @@ extern {}
 extern {}
 
 extern "C" {
-    fn iconv_open(__tocode: *c_char, __fromcode: *c_char) -> iconv_t;
+    fn iconv_open(__tocode: *const c_char, __fromcode: *const c_char) -> iconv_t;
     fn iconv(__cd: iconv_t, __inbuf: *mut *mut c_char,
                  __inbytesleft: *mut size_t, __outbuf: *mut *mut c_char,
                  __outbytesleft: *mut size_t) -> size_t;
@@ -361,7 +361,7 @@ mod test {
         let r = BufReader::new(cont.as_bytes());
         let mut cr = IconvReader::new(r, "UTF-8", "GBK");
 
-        let mut nread = 0;
+        let mut nread: int = 0;
         loop {
             match cr.read_exact(4) {
                 Ok(ref seg) if seg.len() == 4 => {
@@ -417,7 +417,7 @@ mod test {
 
     #[test]
     fn test_decoder_normal() {
-        assert_eq!(bytes!("").decode_with_encoding("CP936").unwrap(), "".to_string());
+        assert_eq!(b"".decode_with_encoding("CP936").unwrap(), "".to_string());
 
         let a = vec!(0xb9, 0xfe, 0xb9, 0xfe);
         assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_string());
@@ -432,7 +432,7 @@ mod test {
     #[test]
     #[should_fail]
     fn test_decoder_fail_creating_converter() {
-        assert_eq!(bytes!("").decode_with_encoding("NOT_EXSITS").unwrap(), "".to_string());
+        assert_eq!(b"".decode_with_encoding("NOT_EXSITS").unwrap(), "".to_string());
     }
 
     #[test]
