@@ -9,7 +9,7 @@ Binding for the iconv library
 #![desc = "iconv bindings for Rust."]
 #![license = "MIT"]
 
-#![crate_id = "github.com/andelf/rust-iconv#iconv:0.1-pre"]
+#![crate_name = "iconv"]
 #![crate_type = "lib"]
 #![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "http://www.rust-lang.org/favicon.ico",
@@ -19,7 +19,6 @@ Binding for the iconv library
 
 #[phase(plugin, link)] extern crate log;
 extern crate libc;
-extern crate debug;
 
 use std::mem;
 use std::vec::Vec;
@@ -70,7 +69,7 @@ impl Converter {
                     })
             });
         if handle == -1 as iconv_t {
-            fail!("Error creating conversion descriptor from {:?} to {:?}", from, to);
+            fail!("Error creating conversion descriptor from {:} to {:}", from, to);
         }
         Converter { cd: handle }
     }
@@ -97,7 +96,7 @@ impl Converter {
             let output_ptr = output.as_ptr();
 
             let ret = unsafe { iconv(self.cd,
-                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&input_left),
+                                     ptr::null_mut::<*mut c_char>(), mem::transmute(&input_left),
                                      mem::transmute(&output_ptr), mem::transmute(&output_left))
             };
 
@@ -106,8 +105,8 @@ impl Converter {
             return (0, bytes_written, if -1 as size_t == ret { errno() as c_int } else { 0 })
         } else {
             let ret = unsafe { iconv(self.cd,
-                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&input_left),
-                                     ptr::mut_null::<*mut c_char>(), mem::transmute(&output_left))
+                                     ptr::null_mut::<*mut c_char>(), mem::transmute(&input_left),
+                                     ptr::null_mut::<*mut c_char>(), mem::transmute(&output_left))
             };
 
             return (0, 0, if -1 as size_t == ret { errno() as c_int } else { 0 })
@@ -147,14 +146,14 @@ impl<R:Reader> IconvReader<R> {
         if self.read_pos > 0 {
             unsafe {
                 ptr::copy_memory::<u8>(self.buf.as_mut_ptr(),
-                                       mem::transmute(self.buf.get(self.read_pos)),
+                                       mem::transmute(&self.buf[self.read_pos]),
                                        self.write_pos - self.read_pos);
             }
 
             self.write_pos -= self.read_pos;
             self.read_pos = 0;
         }
-        match self.inner.read(self.buf.mut_slice_from(self.write_pos)) {
+        match self.inner.read(self.buf.slice_from_mut(self.write_pos)) {
             Ok(nread) => {
                 self.write_pos += nread;
             }
@@ -168,9 +167,9 @@ impl<R:Reader> IconvReader<R> {
 impl<R:Reader> Reader for IconvReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> IoResult<uint> {
         if self.tempbuf.len() != 0 {
-            let nwrite = buf.copy_from(self.tempbuf.as_slice());
+            let nwrite = buf.clone_from_slice(self.tempbuf.as_slice());
             if nwrite < self.tempbuf.len() {
-                self.tempbuf = Vec::from_slice(self.tempbuf.slice_from(nwrite));
+                self.tempbuf = self.tempbuf.slice_from(nwrite).to_vec();
             } else {
                 self.tempbuf = Vec::new();
             }
@@ -211,8 +210,8 @@ impl<R:Reader> Reader for IconvReader<R> {
                     self.read_pos += nread;
                     // here we will write 1 or 2 bytes as most.
                     // try avoiding return Ok(0)
-                    let nwrite = buf.copy_from(tempbuf.as_slice());
-                    self.tempbuf = Vec::from_slice(tempbuf.slice(nwrite, temp_nwrite));
+                    let nwrite = buf.clone_from_slice(tempbuf.as_slice());
+                    self.tempbuf = tempbuf.slice(nwrite, temp_nwrite).to_vec();
                     match err {
                         EILSEQ => return Err(io::standard_error(io::InvalidInput)),
                         _ => return Ok(nwrite),
@@ -266,7 +265,7 @@ fn convert_bytes(inbuf: &[u8], from: &str, to: &str) -> Option<Vec<u8>> {
 
     while total_nread < inbuf.len() {
         let (nread, nwrite, err) = converter.convert(inbuf.slice_from(total_nread),
-                                                     outbuf.mut_slice_from(total_nwrite));
+                                                     outbuf.slice_from_mut(total_nwrite));
 
         total_nread += nread;
         total_nwrite += nwrite;
@@ -388,7 +387,7 @@ mod test {
 
         let b = a.repeat(1024);
         for ch in b.encode_with_encoding("GBK").unwrap().as_slice().chunks(4) {
-            assert_eq!(ch, &[0xb9, 0xfe, 0xb9, 0xfe]);
+            assert_eq!(ch, vec![0xb9, 0xfe, 0xb9, 0xfe].as_slice());
         }
 
         let c = vec!(0xe5, 0x93, 0x88, 0xe5, 0x93, 0x88); // utf8 bytes
@@ -422,7 +421,7 @@ mod test {
         let a = vec!(0xb9, 0xfe, 0xb9, 0xfe);
         assert_eq!(a.decode_with_encoding("GBK").unwrap(), "哈哈".to_string());
 
-        let b = Vec::from_fn(1000, |i| *a.get(i%4)); // grow to 1000 bytes and fill with a
+        let b = Vec::from_fn(1000, |i| a[i%4]); // grow to 1000 bytes and fill with a
 
         for c in b.decode_with_encoding("GBK").unwrap().as_slice().chars() {
             assert_eq!(c, '哈');
