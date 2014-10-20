@@ -1,0 +1,10 @@
+[package]
+
+name    = "iconv"
+version = "0.0.1-dev"
+authors = [ "Andelf<andelf@gmail.com>" ]
+
+[lib]
+
+name       = "iconv"
+path       = "src/lib.rs"
