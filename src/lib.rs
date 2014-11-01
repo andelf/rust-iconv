@@ -69,7 +69,7 @@ impl Converter {
                     })
             });
         if handle == -1 as iconv_t {
-            fail!("Error creating conversion descriptor from {:} to {:}", from, to);
+            panic!("Error creating conversion descriptor from {:} to {:}", from, to);
         }
         Converter { cd: handle }
     }
