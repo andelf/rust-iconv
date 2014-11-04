@@ -4,16 +4,8 @@ os:
 env:
   global:
     - secure: q+azCWiZLMnpauOWB885uoQV0NPhFs9tNX1p0omMAV6mJoC8JD5F7zbTrC3Q+Tz1V97kpokCMTHkqOK8Nb7Z6D8aPqpMHZn/BLE07k0YmbwLyIUXF1HXm5JLeG2W3e2GNy2NRU2moZoO7vNRBL9Rz3UjkAOinTZQ6oXWJcZDEEA=
-install:
-  - rustc -v
-before_script:
-    - rustc -v
-    - cargo -V
-script:
-    - cargo build -v
-    - cargo test -v
-    - cargo doc -v
 after_script:
+  - cargo doc -v
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
 notifications:
   email:
