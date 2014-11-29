@@ -1,8 +1,12 @@
 [package]
 
 name    = "iconv"
-version = "0.0.1-dev"
-authors = [ "Andelf<andelf@gmail.com>" ]
+description = "iconv bindings for Rust"
+version = "0.0.1"
+authors = [ "ShuYu Wang <andelf@gmail.com>" ]
+repository = "https://github.com/andelf/rust-iconv"
+license = "MIT"
+keywords = ["iconv"]
 
 [lib]
 
