@@ -12,3 +12,8 @@ keywords = ["iconv"]
 
 name       = "iconv"
 path       = "src/lib.rs"
+
+
+[dependencies]
+libc = "*"
+log = "*"
