@@ -274,6 +274,7 @@ impl<W: Write> IconvWriter<W> {
 struct Buffer {
     buf: Vec<u8>,
     wrote: usize,
+    read: usize,
 }
 
 const MIN_WRITE_BUFFER_SIZE: usize = 4096;
@@ -288,6 +289,7 @@ impl Buffer {
         &mut self.buf[self.wrote..]
     }
 
+    #[inline]
     pub fn write(&mut self, amt: usize) {
         debug_assert!(self.wrote + amt <= self.buf.len());
         self.wrote += amt
@@ -295,36 +297,63 @@ impl Buffer {
 
     pub fn write_reserve(&mut self, amt: usize) {
         if self.buf.len() < self.wrote + amt {
+            if self.buf.len() >= self.len() + amt {
+                self.move_data_to_front();
+                return;
+            }
             self.write_grow(amt);
         }
     }
 
+    fn move_data_to_front(&mut self) {
+        self.buf.copy_within(self.read..self.wrote, 0);
+        self.wrote -= self.read;
+        self.read = 0;
+    }
+
     pub fn write_grow(&mut self, amt: usize) {
         self.buf.reserve(amt.max(self.buf.len()));
-        self.buf.resize(self.buf.capacity(), 0);
+        unsafe {
+            self.buf.set_len(self.buf.capacity());
+        }
     }
 
     pub fn write_all(&mut self, buf: &[u8]) {
         self.write_reserve(buf.len());
-        self.write_buf()[..buf.len()].copy_from_slice(buf);
+        self.buf[self.wrote..self.wrote + buf.len()].copy_from_slice(buf);
         self.write(buf.len());
     }
 
+    #[inline]
     pub fn read_buf(&self) -> &[u8] {
-        &self.buf[..self.wrote]
+        &self.buf[self.read..self.wrote]
     }
 
+    #[inline]
     pub fn read(&mut self, amt: usize) {
-        debug_assert!(amt <= self.wrote);
-        if amt >= self.wrote {
+        debug_assert!(amt <= self.len());
+        if amt >= self.len() {
             self.wrote = 0;
+            self.read = 0;
         } else {
-            self.buf.copy_within(amt..self.wrote, 0);
-            self.wrote -= amt;
+            self.read += amt;
         }
     }
 
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.wrote - self.read
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.read >= self.wrote
+    }
+
     pub fn into_vec(mut self) -> Vec<u8> {
+        if self.read > 0 && !self.is_empty() {
+            self.move_data_to_front();
+        }
         self.buf.truncate(self.wrote);
         self.buf
     }
@@ -371,7 +400,7 @@ impl<R: Read> Read for IconvReader<R> {
 
 impl<R: Read> BufRead for IconvReader<R> {
     fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
-        if self.output.read_buf().is_empty() {
+        if self.output.is_empty() {
             let mut o = std::mem::take(&mut self.output);
             let n = self.read(o.write_buf())?;
             o.write(n);
@@ -387,7 +416,7 @@ impl<R: Read> BufRead for IconvReader<R> {
 
 impl<W: Write> Write for IconvWriter<W> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        if self.input.read_buf().is_empty() {
+        if self.input.is_empty() {
             match self.iconv.convert(buf, self.output.write_buf()) {
                 Ok((r, w, _)) | Err((r, w, IconvError::IncompleteInput)) => {
                     self.output.write(w);
@@ -423,7 +452,7 @@ impl<W: Write> Write for IconvWriter<W> {
     fn flush(&mut self) -> std::io::Result<()> {
         let _ = self.write(&[])?;
 
-        if !self.input.read_buf().is_empty() {
+        if !self.input.is_empty() {
             return Err(IconvError::IncompleteInput.into_io_error());
         }
         let b = self.output.read_buf();
