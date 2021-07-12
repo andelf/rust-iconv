@@ -10,3 +10,4 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2.97"
+dyn_buf = "0.1.0"
