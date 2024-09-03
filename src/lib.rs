@@ -181,24 +181,23 @@ impl Iconv {
         input: &[u8],
         output: &mut [u8],
     ) -> Result<(usize, usize, usize), (usize, usize, IconvError)> {
-        let input_left = input.len() as size_t;
-        let output_left = output.len() as size_t;
+        let mut input_left = input.len() as size_t;
+        let mut output_left = output.len() as size_t;
 
-        let input_ptr = input.as_ptr();
-        let output_ptr = output.as_ptr();
+        let mut input_ptr = input.as_ptr() as *mut std::ffi::c_char;
+        let mut output_ptr = output.as_mut_ptr() as *mut std::ffi::c_char;
 
-        use std::mem::transmute;
         let chars = unsafe {
             ffi::iconv(
                 self.cd,
                 if input.is_empty() {
                     std::ptr::null_mut()
                 } else {
-                    transmute(&input_ptr)
+                    &mut input_ptr
                 },
-                transmute(&input_left),
-                transmute(&output_ptr),
-                transmute(&output_left),
+                &mut input_left,
+                &mut output_ptr,
+                &mut output_left,
             )
         };
         let bytes_read = input.len() - input_left as usize;
