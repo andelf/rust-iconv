@@ -9,5 +9,5 @@ keywords = ["iconv", "encoding"]
 edition = "2018"
 
 [dependencies]
-libc = "0.2.97"
+libc = "0.2.186"
 dyn_buf = "0.1.0"
