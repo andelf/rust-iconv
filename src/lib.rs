@@ -30,6 +30,56 @@ pub mod ffi {
     /* automatically generated ends */
 }
 
+/// Returns `true` when `name` (after ASCII-lowercasing and stripping
+/// non-alphanumeric characters) refers to an EUC-KR-family encoding.
+///
+/// This covers the names commonly accepted by system `iconv_open` for the
+/// encoding affected by CVE-2025-26519.
+#[cfg(target_env = "musl")]
+fn is_euc_kr_encoding(name: &str) -> bool {
+    let norm: String = name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect();
+    matches!(
+        norm.as_str(),
+        "euckr" | "ksc5601" | "ksc56011987" | "ksx1001" | "ksc56011989" | "csksc56011987"
+            | "isoir149" | "korean"
+    )
+}
+
+/// Validates that `input` is a well-formed EUC-KR byte sequence.
+///
+/// Bytes outside the valid EUC-KR ranges (0x00–0x7F for single-byte,
+/// 0xA1–0xFE lead + 0xA1–0xFE trail for double-byte) are the sequences that
+/// can trigger the out-of-bounds write described in CVE-2025-26519 in musl
+/// libc versions 0.9.13–1.2.5.  Rejecting them before calling the system
+/// `iconv` prevents that vulnerability from being reached.
+#[cfg(target_env = "musl")]
+fn validate_euc_kr(input: &[u8]) -> Result<(), (usize, usize, IconvError)> {
+    let mut i = 0;
+    while i < input.len() {
+        let b = input[i];
+        if b <= 0x7F {
+            i += 1;
+        } else if b >= 0xA1 && b <= 0xFE {
+            if i + 1 >= input.len() {
+                return Err((i, 0, IconvError::IncompleteInput));
+            }
+            let trail = input[i + 1];
+            if trail >= 0xA1 && trail <= 0xFE {
+                i += 2;
+            } else {
+                return Err((i, 0, IconvError::InvalidInput));
+            }
+        } else {
+            return Err((i, 0, IconvError::InvalidInput));
+        }
+    }
+    Ok(())
+}
+
 use libc::size_t;
 use std::io::{BufRead, Read, Write};
 
@@ -40,6 +90,13 @@ const MIN_WRITE: usize = 4096;
 /// The representation of a iconv converter
 pub struct Iconv {
     cd: ffi::iconv_t,
+    /// Whether the source encoding is an EUC-KR variant.
+    ///
+    /// On musl targets we validate EUC-KR input before forwarding it to the
+    /// system `iconv` in order to prevent the out-of-bounds write described in
+    /// CVE-2025-26519 (affects musl libc 0.9.13–1.2.5).
+    #[cfg(target_env = "musl")]
+    from_is_euc_kr: bool,
 }
 
 #[derive(Debug)]
@@ -164,7 +221,11 @@ impl Iconv {
                 IconvError::OsError(e)
             });
         }
-        Ok(Iconv { cd: handle })
+        Ok(Iconv {
+            cd: handle,
+            #[cfg(target_env = "musl")]
+            from_is_euc_kr: is_euc_kr_encoding(from_encoding),
+        })
     }
 
     /// reset to the initial state
@@ -181,6 +242,16 @@ impl Iconv {
         input: &[u8],
         output: &mut [u8],
     ) -> Result<(usize, usize, usize), (usize, usize, IconvError)> {
+        // CVE-2025-26519: musl libc 0.9.13–1.2.5 has an out-of-bounds write
+        // when its EUC-KR→UTF-8 iconv path receives byte sequences outside the
+        // valid EUC-KR range.  Validate the input before forwarding it to the
+        // system iconv so that malformed sequences are rejected in Rust before
+        // they can reach the vulnerable C code.
+        #[cfg(target_env = "musl")]
+        if self.from_is_euc_kr && !input.is_empty() {
+            validate_euc_kr(input)?;
+        }
+
         let input_left = input.len() as size_t;
         let output_left = output.len() as size_t;
 
